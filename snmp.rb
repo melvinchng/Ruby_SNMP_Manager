@@ -98,16 +98,16 @@ def plot_graph(host, community, interval, output, ifTable_columns, position_of_o
 end
 
 def perform_plot_graph_operation                                          # Plot graph
-  host = "melvinchng.asuscomm.com"
-  community = "public"
+  host = @host
+  community = @community
   columns = ["ifDescr", "ifAdminStatus", "ifHCInOctets", "ifHCOutOctets"] #ifIndex not used as I made my own counter
 
   plot_graph(host, community, 5, false, columns, 2, 0, 99999)             # Set to 99999 as it is used to print IP interface
 end
 
 def list_all_interface
-  host = "melvinchng.asuscomm.com"
-  community = "public"
+  host = @host
+  community = @community
   columns = ["ipNetToMediaNetAddress"]
 
   get_result = snmp_walk(host, community, false, columns, 99999, 99999, 0) # Set to 99999 as it is used for graph operation
@@ -123,6 +123,9 @@ def list_all_interface
   end
   puts "########################################"
 end
+
+@host = "192.168.1.252"
+@community = "public"
 
 list_all_interface
 perform_plot_graph_operation
