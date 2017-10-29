@@ -55,45 +55,32 @@ def snmp_walk(host, community, output, ifTable_columns, position_of_octets, posi
   return {:value => temp, :interface => interface}                        # put the temp and interface in hash and return
 end
 
-def snmp_get_next(host, community, oid)
-  puts "======== Network Interface ========"
-  Manager.open(:host => host, :community => community) do |manager|
-    oid = ObjectId.new(oid) #ipNetToMediaNetAddress Table
-    next_oid = oid
-    while next_oid.subtree_of?(oid)
-      response = manager.get_next(next_oid)
-      varbind = response.varbind_list.first
-      next_oid = varbind.name
-      puts varbind.value
-    end
-  end
-end
-
 def get_speed(host, community, interval, output, ifTable_columns, position_of_octets, position_of_ifDescr)
-  speed = []
+  speed = []                                                              # array of speed to store the calculation of speed
   
-  one = snmp_walk(host, community, output, ifTable_columns, position_of_octets, position_of_ifDescr)
-  sleep interval
-  two = snmp_walk(host, community, output, ifTable_columns, position_of_octets, position_of_ifDescr)
+  one = snmp_walk(host, community, output, ifTable_columns, position_of_octets, position_of_ifDescr)  # get hash and assign to one
+  sleep interval                                                                                      # sleep for interval (second)
+  two = snmp_walk(host, community, output, ifTable_columns, position_of_octets, position_of_ifDescr)  # get hash and assign to two
 
-  one[:value].zip(two[:value]) { |a, b|
-    speed << (((b.to_f - a.to_f)*8)/(interval*1024*1024))
+  one[:value].zip(two[:value]) { |a, b|                                   # load two hash, get values
+    speed << (((b.to_f - a.to_f)*8)/(interval*1024*1024))                 # convert from interger to float, find the difference
+                                                                          # between two same interface, multiply by 8 to get a byte
+                                                                          # divide the values by interval (second) and convert to MB/s
   }
 
-  return {:one => one, :two => two, :speed => speed}
+  return {:one => one, :two => two, :speed => speed}                      # return one, two, and speed hash
 end
-
 
 def plot_graph(host, community, interval, output, ifTable_columns, position_of_octets, position_of_ifDescr)
   interface_with_speed = get_speed(host, community, interval, output, ifTable_columns, position_of_octets, position_of_ifDescr)
 
-  graph = []
+  graph = []                                                              # array of graph, to get [[x_1, y_1], ... , [x_n, y_n]]
 
-  interface_with_speed[:one][:interface].zip(interface_with_speed[:speed]) { |a, b|
-     graph << [a, b]
+  interface_with_speed[:one][:interface].zip(interface_with_speed[:speed]) { |a, b| #get interface name, and speed
+     graph << [a, b]                                                      # put it in the form of [x_n, y_n], assign it to graph
   }
 
-  puts AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw
+  puts AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
 end
 
 host = "melvinchng.asuscomm.com"
