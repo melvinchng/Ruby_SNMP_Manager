@@ -75,11 +75,15 @@ def get_speed(host, community, interval, output, ifTable_columns, position_of_oc
   sleep interval                                                                                      # sleep for interval (second)
   two = snmp_walk(host, community, output, ifTable_columns, position_of_octets, position_of_ifDescr, position_of_ipNetToMediaNetAddress)  # get hash and assign to two
 
-  one[:value].zip(two[:value]) { |a, b|                                   # load two hash, get values
-    speed << (((b.to_f - a.to_f)*8)/(interval*1024*1024))                 # convert from interger to float, find the difference
-                                                                          # between two same interface, multiply by 8 to get a byte
-                                                                          # divide the values by interval (second) and convert to MB/s
-  }
+  if one.count == two.count      
+    one[:value].zip(two[:value]) { |a, b|                                   # load two hash, get values
+      speed << (((b.to_f - a.to_f)*8)/(interval*1024*1024))                 # convert from interger to float, find the difference
+                                                                            # between two same interface, multiply by 8 to get a byte
+                                                                            # divide the values by interval (second) and convert to MB/s
+    }
+  else
+    abort("Some interfaces are down in sampling!")
+  end
 
   return {:one => one, :two => two, :speed => speed}                      # return one, two, and speed hash
 end
