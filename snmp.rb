@@ -97,12 +97,39 @@ def plot_graph(host, community, interval, output, ifTable_columns, position_of_o
   puts "\t Plotting interface vs speed (MB/s) in #{interval}s interval"
 end
 
+def plot_graph_interface(host, community, interval, iteration, interface, output, ifTable_columns, position_of_octets, position_of_ifDescr, position_of_ipNetToMediaNetAddress)
+  
+  interface_with_speed = []
+  graph = []                                                              # array of graph, to get [[x_1, y_1], ... , [x_n, y_n]]
+  i = 0
+
+  while i <= iteration  do
+    interface_with_speed[i] = get_speed(host, community, interval, output, ifTable_columns, position_of_octets, position_of_ifDescr, position_of_ipNetToMediaNetAddress)
+    
+      a = i*interval
+      graph << [a, interface_with_speed[i][:speed][interface]]
+      
+    i += 1
+  end
+
+  print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
+  puts "\t Plotting #{interface_with_speed[0][:one][:interface][interface]} vs speed (MB/s) in #{interval}s interval for #{iteration} iterations"
+end
+
 def perform_plot_graph_operation                                          # Plot graph
   host = @host
   community = @community
   columns = ["ifDescr", "ifAdminStatus", "ifHCInOctets", "ifHCOutOctets"] #ifIndex not used as I made my own counter
 
   plot_graph(host, community, 5, false, columns, 2, 0, 99999)             # Set to 99999 as it is used to print IP interface
+end
+
+def perform_plot_graph_operation_interval                                          # Plot graph
+  host = @host
+  community = @community
+  columns = ["ifDescr", "ifAdminStatus", "ifHCInOctets", "ifHCOutOctets"] #ifIndex not used as I made my own counter
+
+  plot_graph_interface(host, community, 2, 5, 3, false, columns, 2, 0, 99999)             # Set to 99999 as it is used to print IP interface
 end
 
 def list_all_interface
@@ -129,6 +156,8 @@ end
 
 list_all_interface
 perform_plot_graph_operation
+
+perform_plot_graph_operation_interval
 
 
 # ifInOctets (1.3.6.1.2.1.2.2.1.10)/ifOutOctets (1.3.6.1.2.1.2.2.1.16) 
