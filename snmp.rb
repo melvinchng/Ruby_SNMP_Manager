@@ -1,4 +1,5 @@
 require 'ascii_charts'
+require 'terminal-table'
 require 'snmp'
 include SNMP
 
@@ -44,7 +45,7 @@ def snmp_walk(host, community, output, ifTable_columns, position_of_octets, posi
     end                                                                   # end row
   end                                                                     # end walk
 
-  return {:value => temp, :interface_name => interface_name, :neighbor_ip => neighbor_ip, :interface => interface, :interface_ip => interface_ip} # put the temp and interface in hash and return
+  return {:value => temp, :interface_name => interface_name, :neighbor_ip => neighbor_ip, :interface => interface, :interface_ip => interface_ip} # put in hash and return
 end
 
 def get_speed(host, community, interval, output, ifTable_columns, position_of_octets, position_of_ifDescr, 
@@ -100,7 +101,7 @@ def plot_graph_interface(host, community, interval, iteration, interface, output
                                         position_of_ipNetToMediaNetAddress, position_of_ipNetToMediaIfIndex, position_of_ipAdEntAddr)
     
       a = i*interval
-      graph << [a, interface_with_speed[i][:speed][interface]]
+      graph << [a, interface_with_speed[i][:speed][interface]]            # array of graph, to get [[x_1, y_1], ... , [x_n, y_n]]
       
     i += 1
   end
@@ -150,7 +151,7 @@ def get_system_information
   SNMP::Manager.open(:host => host, :community => community) do |manager|
     response = manager.get(["sysDescr.0", "sysName.0", "sysLocation.0", "sysContact.0"])
     response.each_varbind do |vb|
-      puts "#{vb.name.to_s}  #{vb.value.to_s}  #{vb.value.asn1_type}"
+      puts "#{vb.name.to_s}  #{vb.value.to_s}  #{vb.value.asn1_type}"          # Print system infromation
     end
   end
 
@@ -163,39 +164,34 @@ def list_all_interface
   host = @host
   community = @community
   columns = ["ipAdEntAddr"]
+  rows = []
 
   get_result = snmp_walk(host, community, false, columns, nil, nil, nil, nil, 0) # Set to nil as it is used for graph operation
 
   i = 0
 
-  puts "Interface"
-  puts "#########################################"
-  puts "# Number \t # IP                   #"
-  puts "#########################################"
   get_result[:interface_ip].each do |a|
-    puts "# #{i=i+1} \t \t # #{a}  \t#" 
+    rows <<  [ i=i+1, a ] 
   end 
-  puts "#########################################"
-  puts
 
+  # Print interface IP
+  puts Terminal::Table.new :title => "Interfaces", :headings => ['Number', 'IP'], :rows => rows
 end
 
 def list_all_neighbor
   host = @host
   community = @community
   columns = ["ipNetToMediaNetAddress", "ipNetToMediaIfIndex"]
+  rows = []
 
   get_result = snmp_walk(host, community, false, columns, nil, nil, 0, 1, nil) # Set to nil as it is used for graph operation
 
-  puts "Neighbor"
-  puts "#########################################"
-  puts "# Interface \t # Neighbor             #"
-  puts "#########################################"
-  get_result[:interface].zip(get_result[:neighbor_ip]) { |a, b| 
-    puts "# #{a}  \t \t # #{b} \t#" 
+  get_result[:interface].zip(get_result[:neighbor_ip]) { |a, b|                
+    rows << [a, b]
   }
-  puts "#########################################"
 
+  # Print interface number and neightbor IP
+  puts Terminal::Table.new :title => "Neighbors", :headings => ['Interface', 'Neighbor'], :rows => rows
 end
 
 ################################ USER INPUT #######################################
