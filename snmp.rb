@@ -108,6 +108,8 @@ def plot_graph_interface(host, community, interval, iteration, interface, output
   print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
   puts
   puts "\tGraph of speed (MB/s) vs traffic for #{interface_with_speed[0][:one][:interface_name][interface]} with #{interval}s sampling rate \n\t\t\t\tfor #{iteration} iterations"
+
+  return interface_with_speed[0][:one][:interface_name]
 end
 
 def perform_plot_graph_operation                                          # Plot graph
@@ -118,7 +120,7 @@ def perform_plot_graph_operation                                          # Plot
 
   columns = ["ifDescr", "ifHCInOctets", "ifHCOutOctets"] #ifIndex not used as I made my own counter
 
-  plot_graph(host, community, interval, false, columns, 1, 0, 99999, 99999, 99999)             # Set to 99999 as it is used to print IP interface
+  plot_graph(host, community, interval, false, columns, 1, 0, nil, nil, nil)             # Set to nil as it is used to print IP interface
 end
 
 def perform_plot_graph_operation_interval                                 # Plot graph
@@ -126,16 +128,16 @@ def perform_plot_graph_operation_interval                                 # Plot
   community = @community
   interval = @interval
   iteration = @iteration
+  interface = @interface
 
   columns = ["ifDescr", "ifHCInOctets", "ifHCOutOctets"] #ifIndex not used as I made my own counter
 
-
   puts
   puts "\t ================ Downstream ================="
-  plot_graph_interface(host, community, interval, iteration, 3, false, columns, 1, 0, 99999, 99999, 99999)  # Set to 99999 as it is used to print IP interface
+  plot_graph_interface(host, community, interval, iteration, interface, false, columns, 1, 0, nil, nil, nil)  # Set to nil as it is used to print IP interface
   puts
   puts "\t ================= Upstream =================="
-  plot_graph_interface(host, community, interval, iteration, 3, false, columns, 2, 0, 99999, 99999, 99999)  # Set to 99999 as it is used to print IP interface
+  plot_graph_interface(host, community, interval, iteration, interface, false, columns, 2, 0, nil, nil, nil)  # Set to nil as it is used to print IP interface
 end
 
 def get_system_information
@@ -162,7 +164,7 @@ def list_all_interface
   community = @community
   columns = ["ipAdEntAddr"]
 
-  get_result = snmp_walk(host, community, false, columns, 99999, 99999, 99999, 99999, 0) # Set to 99999 as it is used for graph operation
+  get_result = snmp_walk(host, community, false, columns, nil, nil, nil, nil, 0) # Set to nil as it is used for graph operation
 
   i = 0
 
@@ -183,7 +185,7 @@ def list_all_neighbor
   community = @community
   columns = ["ipNetToMediaNetAddress", "ipNetToMediaIfIndex"]
 
-  get_result = snmp_walk(host, community, false, columns, 99999, 99999, 0, 1, 99999) # Set to 99999 as it is used for graph operation
+  get_result = snmp_walk(host, community, false, columns, nil, nil, 0, 1, nil) # Set to nil as it is used for graph operation
 
   puts "Neighbor"
   puts "#########################################"
@@ -196,23 +198,18 @@ def list_all_neighbor
 
 end
 
+################################ USER INPUT #######################################
+
 @interval = 0.5
 @iteration = 10
 @host = "192.168.1.252"
 @community = "public"
+@interface = 3
+
+############################## PROGRAM SECTION #####################################
 
 get_system_information
 list_all_interface
 list_all_neighbor
 perform_plot_graph_operation
 perform_plot_graph_operation_interval
-
-
-# ifInOctets (1.3.6.1.2.1.2.2.1.10)/ifOutOctets (1.3.6.1.2.1.2.2.1.16) 
-# (ifInOctets(time1) - ifInOctets(time2)) / (time2 - time1)
-# (ifOutOctets(time1) - ifOutOctets(time2)) / (time2 - time1)
-
-#snmp_get_next(host, community, ipNetToMediaNetAddress)
-
-# https://serverfault.com/questions/401162/how-to-get-interface-traffic-snmp-information-for-routers-cisco-zte-huawei
-# https://fineconnection.com/how-to-monitor-interface-traffic-utilization-or-bandwidth-usage-in-real-time-2/
