@@ -48,7 +48,7 @@ def snmp_walk(host, community, output, ifTable_columns, position_of_octets, posi
     end                                                                   # end row
   }
   
-    puts time.real
+    #puts time.real
   end                                                                     # end walk
 
 
@@ -92,32 +92,7 @@ def plot_graph(host, community, interval, output, ifTable_columns, position_of_o
 
   print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
   puts
-  puts "\t Graph of speed (MB/s) vs interface's traffic with #{interval}s sampling rate"
-end
-
-def plot_graph_interface(host, community, interval, iteration, interface, output, ifTable_columns, position_of_octets, 
-                         position_of_ifDescr, position_of_ipNetToMediaNetAddress, position_of_ipNetToMediaIfIndex, 
-                         position_of_ipAdEntAddr)
-  
-  interface_with_speed = []
-  graph = []                                                              # array of graph, to get [[x_1, y_1], ... , [x_n, y_n]]
-  i = 0
-
-  while i <= iteration  do
-    interface_with_speed[i] = get_speed(host, community, interval, output, ifTable_columns, position_of_octets, position_of_ifDescr, 
-                                        position_of_ipNetToMediaNetAddress, position_of_ipNetToMediaIfIndex, position_of_ipAdEntAddr)
-    
-      a = i*interval
-      graph << [a, interface_with_speed[i][:speed][interface]]            # array of graph, to get [[x_1, y_1], ... , [x_n, y_n]]
-      
-    i += 1
-  end
-
-  print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
-  puts
-  puts "\tGraph of speed (MB/s) vs traffic for #{interface_with_speed[0][:one][:interface_name][interface]} with #{interval}s sampling rate \n\t\t\t\tfor #{iteration} iterations"
-
-  return interface_with_speed[0][:one][:interface_name]
+  puts "Graph of speed (MB/s) vs All interface's traffic with #{interval}s sampling rate"
 end
 
 def perform_plot_graph_operation                                          # Plot graph
@@ -129,6 +104,22 @@ def perform_plot_graph_operation                                          # Plot
   columns = ["ifDescr", "ifHCInOctets", "ifHCOutOctets"] #ifIndex not used as I made my own counter
 
   plot_graph(host, community, interval, false, columns, 1, 0, nil, nil, nil)             # Set to nil as it is used to print IP interface
+end
+
+def get_all_interface_name
+  count = 0
+
+  ifTable_columns = ["ifIndex", "ifDescr", "ifInOctets", "ifOutOctets"]
+  SNMP::Manager.open(:host => @host, :community => @community) do |manager|
+      manager.walk(ifTable_columns) do |row|
+          row.each { |vb| print "\t#{vb.value}" }
+          puts
+
+          count = count + 1
+      end
+  end
+
+  return count
 end
 
 def get_system_information
@@ -213,6 +204,26 @@ def get_speed_using_snmp_get(community, host, column, interval, iteration)
   print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
 end
   
+def perform_plot_graph_operation_with_all_interface
+  puts "Printing all Interfaces and the Corresponding Speed"
+
+  for i in 1..get_all_interface_name
+    begin
+      Timeout::timeout((@interval*@iteration)*1.5) do   # will timeout if there is an error
+        get_speed_using_snmp_get(@community, @host, ["ifHCInOctets."+i.to_s], @interval, @iteration)
+        puts "Graph of in speed (MB/s) vs interface #{i} traffic with #{@interval}s sampling rate"
+        puts
+
+        get_speed_using_snmp_get(@community, @host, ["ifHCOutOctets."+i.to_s], @interval, @iteration)
+        puts "Graph of out speed (MB/s) vs interface #{i} traffic with #{@interval}s sampling rate"
+        puts
+      end
+    rescue
+        puts "Error plotting "+i.to_s+"; Unable to Graph Due to No Activity"
+        next    # do_something* again, with the next i
+    end
+  end
+end
 
 ################################ USER INPUT #######################################
 
@@ -224,25 +235,9 @@ end
 
 ############################## PROGRAM SECTION #####################################
 
-# get_system_information
-# list_all_interface
-# list_all_neighbor
-# perform_plot_graph_operation
-# perform_plot_graph_operation_interval
+get_system_information
+list_all_interface
+list_all_neighbor
+perform_plot_graph_operation
+perform_plot_graph_operation_with_all_interface
 
-for i in 1..9
-  begin
-    Timeout::timeout((@interval*@iteration)*1.25) do
-      get_speed_using_snmp_get(@community, @host, ["ifHCInOctets."+i.to_s], @interval, @iteration)
-      puts "Graph of in speed (MB/s) vs interface #{i} traffic with #{@interval}s sampling rate"
-      puts
-
-      get_speed_using_snmp_get(@community, @host, ["ifHCOutOctets."+i.to_s], @interval, @iteration)
-      puts "Graph of out speed (MB/s) vs interface #{i} traffic with #{@interval}s sampling rate"
-      puts
-    end
-  rescue
-      puts "Error plotting "+i.to_s+"; Unable to Graph Due to No Activity"
-      next    # do_something* again, with the next i
-  end
-end
