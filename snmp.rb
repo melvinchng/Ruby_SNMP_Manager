@@ -1,6 +1,7 @@
 require 'ascii_charts'
 require 'terminal-table'
 require 'snmp'
+require 'benchmark'
 include SNMP
 
 def snmp_walk(host, community, output, ifTable_columns, position_of_octets, position_of_ifDescr, position_of_ipNetToMediaNetAddress, 
@@ -11,7 +12,9 @@ def snmp_walk(host, community, output, ifTable_columns, position_of_octets, posi
   interface_ip = []                                                       # store all interface IP
   interface = []                                                          # store interface for neighbor
 
+
   SNMP::Manager.open(:host => host, :community => community) do |manager| # open the connection
+    time = Benchmark.measure {    
     manager.walk(ifTable_columns) do |row|                                # walk each interface and get ifTable_columns data
       row.each_with_index { |vb, index|                                   # begin for loop
         if output == true                                                 # if output == true
@@ -43,7 +46,11 @@ def snmp_walk(host, community, output, ifTable_columns, position_of_octets, posi
         puts                                                              # print new line
       end                                                                 # end if                                                                
     end                                                                   # end row
+  }
+  
+    puts time.real
   end                                                                     # end walk
+
 
   return {:value => temp, :interface_name => interface_name, :neighbor_ip => neighbor_ip, :interface => interface, :interface_ip => interface_ip} # put in hash and return
 end
@@ -51,7 +58,7 @@ end
 def get_speed(host, community, interval, output, ifTable_columns, position_of_octets, position_of_ifDescr, 
               position_of_ipNetToMediaNetAddress, position_of_ipNetToMediaIfIndex, position_of_ipAdEntAddr)
   speed = []                                                                # array of speed to store the calculation of speed
-  
+
   one = snmp_walk(host, community, output, ifTable_columns, position_of_octets, position_of_ifDescr, 
                   position_of_ipNetToMediaNetAddress, position_of_ipNetToMediaIfIndex, position_of_ipAdEntAddr)  # get hash and assign to one
   sleep interval                                                                                                 # sleep for interval (second)
@@ -124,23 +131,6 @@ def perform_plot_graph_operation                                          # Plot
   plot_graph(host, community, interval, false, columns, 1, 0, nil, nil, nil)             # Set to nil as it is used to print IP interface
 end
 
-def perform_plot_graph_operation_interval                                 # Plot graph
-  host = @host
-  community = @community
-  interval = @interval
-  iteration = @iteration
-  interface = @interface
-
-  columns = ["ifDescr", "ifHCInOctets", "ifHCOutOctets"] #ifIndex not used as I made my own counter
-
-  puts
-  puts "\t ================ Downstream ================="
-  plot_graph_interface(host, community, interval, iteration, interface, false, columns, 1, 0, nil, nil, nil)  # Set to nil as it is used to print IP interface
-  puts
-  puts "\t ================= Upstream =================="
-  plot_graph_interface(host, community, interval, iteration, interface, false, columns, 2, 0, nil, nil, nil)  # Set to nil as it is used to print IP interface
-end
-
 def get_system_information
   host = @host
   community = @community
@@ -194,6 +184,36 @@ def list_all_neighbor
   puts Terminal::Table.new :title => "Neighbors", :headings => ['Interface', 'Neighbor'], :rows => rows
 end
 
+def snmp_get(columns)
+  host = @host
+  community = @community
+
+  SNMP::Manager.open(:host => @host, :community => @community) do |manager|
+    response = manager.get(columns)
+    response.each_varbind do |vb|
+        return vb.value.to_f 
+    end
+  end
+end
+
+def get_speed_using_snmp_get(community, host, column, interval, iteration)
+  graph = []
+  i = 0
+
+  while i <= iteration
+    a = snmp_get(column)
+    sleep interval
+    b = snmp_get(column)
+
+    graph << [i*interval, ((b - a)*8)/(interval*1024*1024)]
+
+    i = i+1
+  end
+  
+  print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
+end
+  
+
 ################################ USER INPUT #######################################
 
 @interval = 0.5
@@ -204,8 +224,25 @@ end
 
 ############################## PROGRAM SECTION #####################################
 
-get_system_information
-list_all_interface
-list_all_neighbor
-perform_plot_graph_operation
-perform_plot_graph_operation_interval
+# get_system_information
+# list_all_interface
+# list_all_neighbor
+# perform_plot_graph_operation
+# perform_plot_graph_operation_interval
+
+for i in 1..9
+  begin
+    Timeout::timeout((@interval*@iteration)*1.25) do
+      get_speed_using_snmp_get(@community, @host, ["ifHCInOctets."+i.to_s], @interval, @iteration)
+      puts "Graph of in speed (MB/s) vs interface #{i} traffic with #{@interval}s sampling rate"
+      puts
+
+      get_speed_using_snmp_get(@community, @host, ["ifHCOutOctets."+i.to_s], @interval, @iteration)
+      puts "Graph of out speed (MB/s) vs interface #{i} traffic with #{@interval}s sampling rate"
+      puts
+    end
+  rescue
+      puts "Error plotting "+i.to_s+"; Unable to Graph Due to No Activity"
+      next    # do_something* again, with the next i
+  end
+end
