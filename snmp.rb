@@ -90,9 +90,14 @@ def plot_graph(host, community, interval, output, ifTable_columns, position_of_o
      graph << [a, b]                                                      # put it in the form of [x_n, y_n], assign it to graph
   }
 
-  print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
-  puts
-  puts "Graph of speed (MB/s) vs All interface's traffic with #{interval}s sampling rate"
+  begin
+    Timeout::timeout(interval*1.5) do   # will timeout if there is an error
+      print AsciiCharts::Cartesian.new(graph, :bar => true, :hide_zero => false).draw  # draw graph
+      puts "Graph of speed (MB/s) vs All interface's traffic with #{interval*1.5}s sampling rate"
+    end
+  rescue
+      puts "Error plotting graph for all interface; Unable to Graph Due to No Activity"
+  end
 end
 
 def perform_plot_graph_operation                                                           # Plot graph
@@ -201,6 +206,9 @@ def perform_plot_graph_operation_with_all_interface
   puts "Printing all Interfaces and the Corresponding Speed"
 
   puts "\t ===================== Down Stream ===================="
+  puts 
+  puts "\tInterf\tName\tifInOcters\tifOutHCOtets"
+  puts
 
   for i in 1..get_all_interface_name
     begin
@@ -210,13 +218,16 @@ def perform_plot_graph_operation_with_all_interface
         puts
       end
     rescue
-        puts "Error plotting "+i.to_s+"; Unable to Graph Due to No Activity"
+        puts "Error plotting "+i.to_s+"; Unable to Graph Downstream Due to No Activity"
         next    # do_something* again, with the next i
     end
   end
 
   puts
   puts "\t ====================== Up Stream ===================="
+  puts 
+  puts "\tInterf\tName\tifInOcters\tifOutHCOtets"
+  puts
 
   for i in 1..get_all_interface_name
     begin
@@ -226,7 +237,7 @@ def perform_plot_graph_operation_with_all_interface
         puts
       end
     rescue
-        puts "Error plotting "+i.to_s+"; Unable to Graph Due to No Activity"
+        puts "Error plotting "+i.to_s+"; Unable to Graph Upstream Due to No Activity"
         next    # do_something* again, with the next i
     end
   end
@@ -238,13 +249,12 @@ end
 @iteration = 10
 @host = "192.168.1.252"
 @community = "public"
-@interface = 3
 
 ############################## PROGRAM SECTION #####################################
 
-get_system_information
-list_all_interface
-list_all_neighbor
-perform_plot_graph_operation
+# get_system_information
+# list_all_interface
+# list_all_neighbor
+# perform_plot_graph_operation
 perform_plot_graph_operation_with_all_interface
 
