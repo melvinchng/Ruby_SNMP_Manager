@@ -256,5 +256,21 @@ end
 # list_all_interface
 # list_all_neighbor
 # perform_plot_graph_operation
-perform_plot_graph_operation_with_all_interface
+#perform_plot_graph_operation_with_all_interface
 
+############################ DATA ANALYSIS SECTION ################################
+
+def traffic_accuracy_analysis(community, host, column, interval, iteration)
+  i = 0
+
+  while i <= iteration
+    time = Benchmark.measure { 
+      print snmp_get(host, community, column)
+    }
+    print "\t#{time}"
+
+    i = i+1
+  end
+end
+
+traffic_accuracy_analysis(@community, @host, ["ifHCInOctets.6"], @interval, @iteration)
