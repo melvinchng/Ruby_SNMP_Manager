@@ -285,7 +285,7 @@ loop do
   @community = gets
   @community = @community.chomp
 
-  puts "What is the interval of sampling?"
+  puts "What is the interval of sampling in seconds (decimal allowed)?"
   @interval = gets
   @interval = @interval.chomp.to_f
 
