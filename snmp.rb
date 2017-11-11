@@ -109,9 +109,9 @@ end
 def get_all_interface_name
   count = 0
 
-  ifTable_columns = ["ifIndex", "ifDescr", "ifInOctets", "ifOutOctets"]
+  ifTable_columns = ["ifIndex", "ifDescr", "ifInOctets", "ifOutOctets"]                     # Perform SNMP Walk to get all the columns
   SNMP::Manager.open(:host => @host, :community => @community) do |manager|
-      manager.walk(ifTable_columns) do |row|
+      manager.walk(ifTable_columns) do |row|                                                # Walk the table and print the values
           row.each { |vb| print "\t#{vb.value}" }
           puts
 
@@ -122,7 +122,7 @@ def get_all_interface_name
   return count
 end
 
-def get_system_information
+def get_system_information                                                     # Print system information
   host = @host
   community = @community
 
@@ -167,7 +167,7 @@ def list_all_neighbor
 
   get_result = snmp_walk(host, community, false, columns, nil, nil, 0, 1, nil) # Set to nil as it is used for graph operation
 
-  get_result[:interface].zip(get_result[:neighbor_ip]) { |a, b|                
+  get_result[:interface].zip(get_result[:neighbor_ip]) { |a, b|                # Put the information into rows to be printed in table
     rows << [a, b]
   }
 
@@ -175,7 +175,7 @@ def list_all_neighbor
   puts Terminal::Table.new :title => "Neighbors", :headings => ['Interface', 'Neighbor'], :rows => rows
 end
 
-def snmp_get(host, community, columns)
+def snmp_get(host, community, columns)                                        # SNMP Get Operation
   SNMP::Manager.open(:host => host, :community => community) do |manager|
     response = manager.get(columns)
     response.each_varbind do |vb|
@@ -190,11 +190,11 @@ def get_speed_using_snmp_get(community, host, column, interval, iteration)
 
   while i <= iteration
     a = snmp_get(host, community, column)
-    sleep interval
+    sleep interval                                                            # sleep for interval of time
     b = snmp_get(host, community, column)
 
-    graph << [i*interval, ((b - a)*8)/(interval*1024*1024)]
-
+    graph << [i*interval, ((b - a)*8)/(interval*1024*1024)]                   # Calculate the speed and put into x_1, y_1 so that
+                                                                              # it can be added to graph array
     i = i+1
   end
   
@@ -251,10 +251,10 @@ def traffic_accuracy_analysis(community, host, column, interval, iteration)
   puts "Benchmark for SNMP Get"
 
   while i <= iteration
-    time = Benchmark.measure { 
-      print snmp_get(host, community, column)
+    time = Benchmark.measure {                                                      # Perform benchark for SNMP Get for analysis
+      print snmp_get(host, community, column)                                       # Print the information of get operation
     }
-    print "\t#{time}"
+    print "\t#{time}"                                                               # Print the time taken for one iteration
 
     i = i+1
   end
