@@ -248,6 +248,8 @@ end
 def traffic_accuracy_analysis(community, host, column, interval, iteration)
   i = 0
 
+  puts "Benchmark for SNMP Get"
+
   while i <= iteration
     time = Benchmark.measure { 
       print snmp_get(host, community, column)
@@ -277,15 +279,19 @@ end
 loop do
   puts "What is your host?"
   @host = gets
+  @host = @host.chomp
 
   puts "What is your community string?"
   @community = gets
+  @community = @community.chomp
 
   puts "What is the interval of sampling?"
   @interval = gets
+  @interval = @interval.chomp.to_f
 
   puts "What is the iteration of sampling?"
   @iteration = gets
+  @iteration = @iteration.chomp.to_f
 
   get_system_information
   list_all_interface
