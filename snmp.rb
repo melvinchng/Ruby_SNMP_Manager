@@ -243,21 +243,6 @@ def perform_plot_graph_operation_with_all_interface
   end
 end
 
-################################ USER INPUT #######################################
-
-@interval = 0.5
-@iteration = 10
-@host = "192.168.1.252"
-@community = "public"
-
-############################## PROGRAM SECTION #####################################
-
-# get_system_information
-# list_all_interface
-# list_all_neighbor
-# perform_plot_graph_operation
-#perform_plot_graph_operation_with_all_interface
-
 ############################ DATA ANALYSIS SECTION ################################
 
 def traffic_accuracy_analysis(community, host, column, interval, iteration)
@@ -273,4 +258,40 @@ def traffic_accuracy_analysis(community, host, column, interval, iteration)
   end
 end
 
-traffic_accuracy_analysis(@community, @host, ["ifHCInOctets.6"], @interval, @iteration)
+############################## PROGRAM SECTION #####################################
+
+# get_system_information
+# list_all_interface
+# list_all_neighbor
+# perform_plot_graph_operation
+# perform_plot_graph_operation_with_all_interface
+
+################################ USER INPUT #######################################
+
+# Default values
+# @interval = 0.5
+# @iteration = 10
+# @host = "192.168.1.252"
+# @community = "public"
+
+loop do
+  puts "What is your host?"
+  @host = gets
+
+  puts "What is your community string?"
+  @community = gets
+
+  puts "What is the interval of sampling?"
+  @interval = gets
+
+  puts "What is the iteration of sampling?"
+  @iteration = gets
+
+  get_system_information
+  list_all_interface
+  list_all_neighbor
+  perform_plot_graph_operation
+  perform_plot_graph_operation_with_all_interface
+
+  traffic_accuracy_analysis(@community, @host, ["ifHCInOctets.6"], @interval, @iteration)  
+end
