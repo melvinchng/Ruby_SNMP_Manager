@@ -260,7 +260,12 @@ def traffic_accuracy_analysis(community, host, column, interval, iteration)
   end
 end
 
-############################## PROGRAM SECTION #####################################
+############################## DEFAULT VALUES #####################################
+
+@interval = 0.5
+@iteration = 10
+@host = "192.168.1.252"
+@community = "public"
 
 # get_system_information
 # list_all_interface
@@ -269,12 +274,6 @@ end
 # perform_plot_graph_operation_with_all_interface
 
 ################################ USER INPUT #######################################
-
-# Default values
-# @interval = 0.5
-# @iteration = 10
-# @host = "192.168.1.252"
-# @community = "public"
 
 loop do
   puts "What is your host?"
